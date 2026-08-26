@@ -9,7 +9,10 @@
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn, execFile, type ChildProcess } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_STDOUT_BYTES = 50 * 1024; // 50 KB
@@ -65,7 +68,16 @@ async function detectCodeGraphExecutable(options: { pathEnv?: string; platform?:
       try {
         const stat = await fs.stat(fullPath);
         if (stat.isFile() || stat.isSymbolicLink()) {
-          return { available: true, executablePath: fullPath };
+          let version: string | undefined;
+          try {
+            const isCmd = platform === "win32" && (fullPath.endsWith(".cmd") || fullPath.endsWith(".bat"));
+            const { stdout } = await execFileAsync(fullPath, ["--version"], {
+              timeout: 10000,
+              shell: isCmd
+            });
+            version = stdout.trim();
+          } catch {}
+          return { available: true, executablePath: fullPath, version };
         }
       } catch {}
     }
@@ -108,13 +120,30 @@ async function runCodeGraph(options: {
     const isCmdOrBat = isWin && (executablePath.endsWith(".cmd") || executablePath.endsWith(".bat"));
 
     try {
-      child = spawn(executablePath, options.args, {
-        cwd: options.cwd,
-        env: options.env ? { ...process.env, ...options.env } : process.env,
-        stdio: ["ignore", "pipe", "pipe"],
-        windowsHide: true,
-        shell: isCmdOrBat
-      });
+      if (isCmdOrBat) {
+        const comSpec = process.env.ComSpec || "cmd.exe";
+        const formattedArgs = options.args.map((arg) => {
+          if (arg.includes(" ") || arg.includes('"') || arg.includes("'") || arg.includes("\n")) {
+            return `"${arg.replace(/"/g, '""')}"`;
+          }
+          return arg;
+        });
+        const cmdLine = `"${executablePath}" ${formattedArgs.join(" ")}`;
+        child = spawn(comSpec, ["/d", "/s", "/c", cmdLine], {
+          cwd: options.cwd,
+          env: options.env ? { ...process.env, ...options.env } : process.env,
+          stdio: ["ignore", "pipe", "pipe"],
+          windowsHide: true,
+          windowsVerbatimArguments: true
+        });
+      } else {
+        child = spawn(executablePath, options.args, {
+          cwd: options.cwd,
+          env: options.env ? { ...process.env, ...options.env } : process.env,
+          stdio: ["ignore", "pipe", "pipe"],
+          windowsHide: true
+        });
+      }
     } catch (err: any) {
       if (err.code === "ENOENT") {
         return reject(

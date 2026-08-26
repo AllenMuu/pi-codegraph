@@ -60,8 +60,10 @@ export async function detectCodeGraphExecutable(
 
   let version: string | undefined;
   try {
+    const isCmdOrBat = platform === "win32" && (foundPath.endsWith(".cmd") || foundPath.endsWith(".bat"));
     const { stdout } = await execFileAsync(foundPath, ["--version"], {
-      timeout: 10000
+      timeout: 10000,
+      shell: isCmdOrBat
     });
     version = stdout.trim();
   } catch {

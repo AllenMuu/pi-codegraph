@@ -69,12 +69,29 @@ export async function runCodeGraph(
     const isCmdOrBat = isWin && (executablePath.endsWith(".cmd") || executablePath.endsWith(".bat"));
 
     try {
-      child = spawn(executablePath, options.args, {
-        cwd: options.cwd,
-        stdio: ["ignore", "pipe", "pipe"],
-        windowsHide: true,
-        shell: isCmdOrBat
-      });
+      if (isCmdOrBat) {
+        const comSpec = process.env.ComSpec || "cmd.exe";
+        // Quote arguments safely for cmd.exe /c to prevent quote stripping
+        const formattedArgs = options.args.map((arg) => {
+          if (arg.includes(" ") || arg.includes('"') || arg.includes("'") || arg.includes("\n")) {
+            return `"${arg.replace(/"/g, '""')}"`;
+          }
+          return arg;
+        });
+        const cmdLine = `"${executablePath}" ${formattedArgs.join(" ")}`;
+        child = spawn(comSpec, ["/d", "/s", "/c", cmdLine], {
+          cwd: options.cwd,
+          stdio: ["ignore", "pipe", "pipe"],
+          windowsHide: true,
+          windowsVerbatimArguments: true
+        });
+      } else {
+        child = spawn(executablePath, options.args, {
+          cwd: options.cwd,
+          stdio: ["ignore", "pipe", "pipe"],
+          windowsHide: true
+        });
+      }
     } catch (err: any) {
       if (err.code === "ENOENT") {
         return reject(
