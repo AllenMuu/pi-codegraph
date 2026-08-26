@@ -128,7 +128,7 @@ async function runCodeGraph(options: {
           }
           return arg;
         });
-        const cmdLine = `"${executablePath}" ${formattedArgs.join(" ")}`;
+        const cmdLine = `""${executablePath}" ${formattedArgs.join(" ")}"`;
         child = spawn(comSpec, ["/d", "/s", "/c", cmdLine], {
           cwd: options.cwd,
           env: options.env ? { ...process.env, ...options.env } : process.env,

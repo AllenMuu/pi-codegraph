@@ -71,14 +71,15 @@ export async function runCodeGraph(
     try {
       if (isCmdOrBat) {
         const comSpec = process.env.ComSpec || "cmd.exe";
-        // Quote arguments safely for cmd.exe /c to prevent quote stripping
+        // Quote arguments safely for cmd.exe
         const formattedArgs = options.args.map((arg) => {
           if (arg.includes(" ") || arg.includes('"') || arg.includes("'") || arg.includes("\n")) {
             return `"${arg.replace(/"/g, '""')}"`;
           }
           return arg;
         });
-        const cmdLine = `"${executablePath}" ${formattedArgs.join(" ")}`;
+        // Wrap entire command string in outer quotes so cmd.exe /s /c stripping leaves inner quotes intact
+        const cmdLine = `""${executablePath}" ${formattedArgs.join(" ")}"`;
         child = spawn(comSpec, ["/d", "/s", "/c", cmdLine], {
           cwd: options.cwd,
           stdio: ["ignore", "pipe", "pipe"],
