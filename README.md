@@ -29,13 +29,13 @@ A Pi-native extension that provides the [Pi coding agent](https://github.com/bad
 Install the package in your Pi environment:
 
 ```sh
-npm install pi-codegraph
+npm install @allenmuu/pi-codegraph
 ```
 
 And load it in your Pi configuration:
 
 ```ts
-import registerPiExtension from "pi-codegraph";
+import registerPiExtension from "@allenmuu/pi-codegraph";
 
 export default function (pi) {
   registerPiExtension(pi);

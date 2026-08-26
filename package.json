@@ -1,5 +1,5 @@
 {
-  "name": "pi-codegraph",
+  "name": "@allenmuu/pi-codegraph",
   "version": "1.0.0",
   "description": "Pi-native extension for CodeGraph structural code exploration",
   "type": "module",
