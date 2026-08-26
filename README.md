@@ -36,10 +36,14 @@ See [the architecture document](docs/architecture.md) and [the roadmap](docs/roa
 
 Out of scope: MCP adapter/client support, automatic installation or indexing, direct database access, caching, background synchronization, and multiple tools.
 
+## Compatibility
+
+`pi-codegraph` will require Node.js 22 or newer. macOS and Linux are supported targets for v0.1; Windows is experimental while its command-launcher behavior is validated.
+
 ## Contributing
 
 The implementation plan will be added before development begins. Issues and design feedback are welcome.
 
 ## License
 
-License selection is pending.
+[MIT](LICENSE)
