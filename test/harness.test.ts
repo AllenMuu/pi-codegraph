@@ -1,10 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { createFakeCodeGraphCli } from "./helpers/fake-cli.js";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-
-const execFileAsync = promisify(execFile);
+import { runCodeGraph } from "../src/codegraph/cli.js";
+import { CodeGraphError, CodeGraphErrorCode } from "../src/codegraph/errors.js";
+import * as os from "node:os";
 
 describe("fake codegraph CLI test harness", () => {
   it("creates an executable fake CLI and records invocations", async () => {
@@ -14,12 +13,13 @@ describe("fake codegraph CLI test harness", () => {
     });
 
     try {
-      const { stdout } = await execFileAsync(fake.executablePath, ["explore", "query with 'quotes' and spaces"], {
-        env: { ...process.env, ...fake.env },
-        shell: process.platform === "win32"
+      const result = await runCodeGraph({
+        executablePath: fake.executablePath,
+        args: ["explore", "query with 'quotes' and spaces"],
+        cwd: os.tmpdir()
       });
 
-      assert.equal(stdout.trim(), "fake exploration output");
+      assert.equal(result.stdout.trim(), "fake exploration output");
       const calls = await fake.getInvocations();
       assert.equal(calls.length, 1);
       assert.deepEqual(calls[0].args, ["explore", "query with 'quotes' and spaces"]);
@@ -37,14 +37,16 @@ describe("fake codegraph CLI test harness", () => {
     try {
       await assert.rejects(
         async () => {
-          await execFileAsync(fake.executablePath, ["explore", "fail"], {
-            env: { ...process.env, ...fake.env },
-            shell: process.platform === "win32"
+          await runCodeGraph({
+            executablePath: fake.executablePath,
+            args: ["explore", "fail"],
+            cwd: os.tmpdir()
           });
         },
         (err: any) => {
-          assert.equal(err.code, 1);
-          assert.match(err.stderr, /error from codegraph/);
+          assert.ok(err instanceof CodeGraphError);
+          assert.equal(err.code, CodeGraphErrorCode.COMMAND_FAILED);
+          assert.match(err.stderrTail ?? "", /error from codegraph/);
           return true;
         }
       );

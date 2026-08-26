@@ -93,6 +93,7 @@ async function main() {
     if (!stderr.endsWith("\\n")) process.stderr.write("\\n");
   }
 
+  await new Promise(r => process.stdout.write("", r));
   process.exit(exitCode);
 }
 
