@@ -30,8 +30,9 @@ export interface FakeCliInstance {
 export async function createFakeCodeGraphCli(options: FakeCliOptions = {}): Promise<FakeCliInstance> {
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "fake-codegraph-"));
   const logFile = path.join(tmpDir, "invocations.jsonl");
+  const isWin = process.platform === "win32";
   const binName = options.executableName ?? "codegraph";
-  const scriptPath = path.join(tmpDir, binName);
+  const scriptPath = path.join(tmpDir, isWin ? `${binName}.js` : binName);
 
   const scriptContent = `#!/usr/bin/env node
 const fs = require("node:fs");
@@ -103,10 +104,14 @@ main().catch(err => {
 
   await fs.writeFile(scriptPath, scriptContent, { mode: 0o755 });
 
-  if (options.createCmdWrapper) {
+  let executablePath = scriptPath;
+  if (isWin || options.createCmdWrapper) {
     const cmdPath = path.join(tmpDir, `${binName}.cmd`);
-    const cmdContent = `@echo off\nnode "${scriptPath}" %*`;
+    const cmdContent = `@echo off\r\nnode "${scriptPath}" %*`;
     await fs.writeFile(cmdPath, cmdContent, { mode: 0o755 });
+    if (isWin) {
+      executablePath = cmdPath;
+    }
   }
 
   const env = {
@@ -115,7 +120,7 @@ main().catch(err => {
 
   return {
     binDir: tmpDir,
-    executablePath: scriptPath,
+    executablePath,
     env,
     async getInvocations(): Promise<FakeCliInvocation[]> {
       try {

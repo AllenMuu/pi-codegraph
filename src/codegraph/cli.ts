@@ -65,11 +65,15 @@ export async function runCodeGraph(
 
   return new Promise<CodeGraphResult>((resolve, reject) => {
     let child: ChildProcess;
+    const isWin = process.platform === "win32";
+    const isCmdOrBat = isWin && (executablePath.endsWith(".cmd") || executablePath.endsWith(".bat"));
+
     try {
       child = spawn(executablePath, options.args, {
         cwd: options.cwd,
         stdio: ["ignore", "pipe", "pipe"],
-        windowsHide: true
+        windowsHide: true,
+        shell: isCmdOrBat
       });
     } catch (err: any) {
       if (err.code === "ENOENT") {

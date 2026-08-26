@@ -9,10 +9,7 @@
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { spawn, execFile, type ChildProcess } from "node:child_process";
-import { promisify } from "node:util";
-
-const execFileAsync = promisify(execFile);
+import { spawn, type ChildProcess } from "node:child_process";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_STDOUT_BYTES = 50 * 1024; // 50 KB
@@ -107,12 +104,16 @@ async function runCodeGraph(options: {
 
   return new Promise<{ stdout: string; truncated: boolean }>((resolve, reject) => {
     let child: ChildProcess;
+    const isWin = process.platform === "win32";
+    const isCmdOrBat = isWin && (executablePath.endsWith(".cmd") || executablePath.endsWith(".bat"));
+
     try {
       child = spawn(executablePath, options.args, {
         cwd: options.cwd,
         env: options.env ? { ...process.env, ...options.env } : process.env,
         stdio: ["ignore", "pipe", "pipe"],
-        windowsHide: true
+        windowsHide: true,
+        shell: isCmdOrBat
       });
     } catch (err: any) {
       if (err.code === "ENOENT") {

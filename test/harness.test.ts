@@ -15,7 +15,8 @@ describe("fake codegraph CLI test harness", () => {
 
     try {
       const { stdout } = await execFileAsync(fake.executablePath, ["explore", "query with 'quotes' and spaces"], {
-        env: { ...process.env, ...fake.env }
+        env: { ...process.env, ...fake.env },
+        shell: process.platform === "win32"
       });
 
       assert.equal(stdout.trim(), "fake exploration output");
@@ -37,7 +38,8 @@ describe("fake codegraph CLI test harness", () => {
       await assert.rejects(
         async () => {
           await execFileAsync(fake.executablePath, ["explore", "fail"], {
-            env: { ...process.env, ...fake.env }
+            env: { ...process.env, ...fake.env },
+            shell: process.platform === "win32"
           });
         },
         (err: any) => {
