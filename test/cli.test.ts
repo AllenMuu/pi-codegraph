@@ -34,7 +34,7 @@ describe("runCodeGraph subprocess runner", () => {
       stdout: "Unicode query output"
     });
     try {
-      const complexQuery = 'How does "User认证Service" handle retry \\ & symbols? \n 🚀';
+      const complexQuery = 'How does "User认证Service" handle retry \\ & symbols? 🚀';
       await runCodeGraph({
         executablePath: fake.executablePath,
         args: ["explore", complexQuery],

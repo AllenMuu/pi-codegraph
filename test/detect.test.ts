@@ -36,8 +36,7 @@ describe("detectCodeGraphExecutable", () => {
     const fake = await createFakeCodeGraphCli({ stdout: "codegraph 0.1.0-fake" });
     try {
       const result = await detectCodeGraphExecutable({
-        pathEnv: fake.env.PATH,
-        platform: "darwin"
+        pathEnv: fake.env.PATH
       });
       assert.equal(result.available, true);
       assert.equal(typeof result.executablePath, "string");
@@ -49,8 +48,7 @@ describe("detectCodeGraphExecutable", () => {
 
   it("returns available=false when codegraph is not on PATH", async () => {
     const result = await detectCodeGraphExecutable({
-      pathEnv: "/nonexistent-path-12345",
-      platform: "darwin"
+      pathEnv: "/nonexistent-path-12345"
     });
     assert.equal(result.available, false);
     assert.equal(result.executablePath, undefined);
@@ -101,5 +99,6 @@ describe("CodeGraphError and normalization", () => {
     const formatted = formatToolError(err);
     assert.match(formatted, /CODEGRAPH_NOT_INITIALIZED/);
     assert.match(formatted, /codegraph init/);
+    assert.ok(!formatted.includes("node:internal"));
   });
 });
