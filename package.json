@@ -1,0 +1,38 @@
+{
+  "name": "pi-codegraph",
+  "version": "0.1.0",
+  "description": "Pi-native extension for CodeGraph structural code exploration",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --import tsx --test \"test/**/*.test.ts\"",
+    "lint": "tsc --noEmit",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "pi",
+    "pi-extension",
+    "codegraph",
+    "code-exploration"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.48"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

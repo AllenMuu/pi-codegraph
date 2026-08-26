@@ -1,48 +1,106 @@
 # pi-codegraph
 
-A Pi-native extension that gives the [Pi coding agent](https://github.com/badlogic/pi-mono) structural understanding of the current workspace through the [CodeGraph](https://github.com/colbymchenry/codegraph) CLI.
+A Pi-native extension that provides the [Pi coding agent](https://github.com/badlogic/pi-mono) with structural code exploration capabilities through the [CodeGraph](https://github.com/colbymchenry/codegraph) CLI.
 
-## Status
+## Core Philosophy
 
-Planning for `v0.1.0 — Native Explore`. The project is not implemented yet.
+- **Pi-native:** Integrates using Pi's native extension APIs (`registerTool`, `addPromptGuidelines`, `addPromptSnippet`) rather than introducing an MCP server lifecycle or adapter layer.
+- **CodeGraph-compatible:** Interacts strictly through CodeGraph's public CLI interface (`codegraph explore <query>`). It does not touch `.codegraph` database internals or import internal CodeGraph packages.
+- **Upstream-independent:** Functions independently without requiring CodeGraph upstream modifications, forks, or PRs.
 
-## Purpose
+## Prerequisites
 
-`pi-codegraph` exposes one focused Pi tool, `codegraph_explore`, for questions about code structure, symbols, relationships, implementations, and call paths. It runs CodeGraph in the active Pi workspace and returns the useful command output to the agent.
+1. **Node.js 22+** (macOS, Linux; Windows experimental).
+2. **CodeGraph CLI** installed and available on your system `PATH`:
+   ```sh
+   # Verify CodeGraph CLI is available
+   codegraph --version
+   ```
+3. **Initialized Workspace Index:** The active workspace must have a `.codegraph/` index:
+   ```sh
+   # Run in your project root once
+   codegraph init
+   ```
 
-The project is **Pi-native, CodeGraph-compatible, and upstream-independent**:
+## Installation
 
-- Pi-native: use Pi's extension APIs rather than embedding a generic MCP client.
-- CodeGraph-compatible: depend on CodeGraph's public CLI contract only.
-- Upstream-independent: do not require a CodeGraph fork or upstream Pi support.
+### Option 1: npm Package
 
-## Initial architecture
+Install the package in your Pi environment:
 
-```text
-Pi agent
-  └─ Pi extension: pi-codegraph
-       └─ CodeGraph CLI (`codegraph explore <query>`)
-            └─ current workspace's .codegraph/ index
+```sh
+npm install pi-codegraph
 ```
 
-See [the architecture document](docs/architecture.md) and [the roadmap](docs/roadmap.md) for the boundaries and planned milestones.
+And load it in your Pi configuration:
 
-## v0.1 scope
+```ts
+import registerPiExtension from "pi-codegraph";
 
-- One LLM-callable tool: `codegraph_explore({ query })`.
-- Execute `codegraph explore` in the active Pi workspace.
-- Detect a missing CodeGraph CLI and missing `.codegraph/` index with actionable errors.
-- Spawn the CLI using an argument array; never interpolate user input into a shell command.
+export default function (pi) {
+  registerPiExtension(pi);
+}
+```
 
-Out of scope: MCP adapter/client support, automatic installation or indexing, direct database access, caching, background synchronization, and multiple tools.
+### Option 2: Copyable Single-File Extension
 
-## Compatibility
+For local trial or direct audit without npm dependencies, copy [`examples/pi-codegraph.ts`](examples/pi-codegraph.ts) into your local Pi extensions directory.
 
-`pi-codegraph` will require Node.js 22 or newer. macOS and Linux are supported targets for v0.1; Windows is experimental while its command-launcher behavior is validated.
+## Features & LLM Capabilities
 
-## Contributing
+### `codegraph_explore`
 
-The implementation plan will be added before development begins. Issues and design feedback are welcome.
+Exposes exactly one focused LLM-callable tool:
+
+```json
+{
+  "query": "How does authentication flow from API endpoints to the database?"
+}
+```
+
+### Prompt Routing Guidance
+
+The extension injects native prompt guidelines advising the agent when to choose `codegraph_explore`:
+
+- **Use `codegraph_explore` for:**
+  - System or module architecture
+  - Multi-file feature implementations
+  - Symbol relationships and implementations
+  - Call paths and request lifecycles
+  - Cross-file dependencies and change blast radius
+- **Use built-in `grep` / `find` / `read` for:**
+  - Exact literal string matching
+  - Known files and line numbers
+  - Documentation, configuration, build scripts, or generated files
+
+## Security & Reliability Guardrails
+
+- **Workspace Sandbox:** Derived exclusively from the active Pi session (`cwd`); LLM cannot supply arbitrary directory paths.
+- **Safe Process Spawning:** Uses argument arrays (`spawn`), strictly preventing shell interpolation and injection risks.
+- **Output Bounds:** Exploration output is capped at 50 KB or 2,000 lines with an explicit truncation notice to prevent model context exhaustion.
+- **Timeout & Cancellation:** 30-second timeout (`CODEGRAPH_TIMEOUT`) and `AbortSignal` cancellation propagation ensure child processes are terminated promptly.
+- **Zero Network & Zero Telemetry:** Sends no external network requests and collects no telemetry.
+
+## Normalized Error Codes
+
+Process failures return actionable error messages without leaking internal Node stack traces:
+
+| Error Code | Meaning | Remediation |
+| --- | --- | --- |
+| `CODEGRAPH_NOT_FOUND` | CLI binary not located on `PATH` | Install CodeGraph or update system `PATH`. |
+| `CODEGRAPH_NOT_INITIALIZED` | Workspace missing `.codegraph/` | Run `codegraph init` in workspace. |
+| `CODEGRAPH_TIMEOUT` | Process exceeded 30 seconds | Refine query to be more specific. |
+| `CODEGRAPH_ABORTED` | Cancelled by agent signal | Re-run if cancelled unintentionally. |
+| `CODEGRAPH_COMMAND_FAILED` | CLI returned non-zero exit | Inspect the bounded stderr tail (up to 4 KB). |
+
+## Development
+
+```sh
+npm install       # Install dependencies
+npm run build     # Compile TypeScript (tsc)
+npm test          # Run test suite
+npm run lint      # Static type-check
+```
 
 ## License
 
