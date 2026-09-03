@@ -1,6 +1,6 @@
 {
   "name": "@allenmuu/pi-codegraph",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Pi-native extension for CodeGraph structural code exploration",
   "type": "module",
   "main": "dist/index.js",
@@ -20,6 +20,7 @@
     "prepack": "npm run build"
   },
   "keywords": [
+    "pi-package",
     "pi",
     "pi-extension",
     "codegraph",
@@ -30,6 +31,11 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/AllenMuu/pi-codegraph.git"
+  },
+  "pi": {
+    "extensions": [
+      "./dist/index.js"
+    ]
   },
   "dependencies": {
     "@sinclair/typebox": "^0.34.48"
